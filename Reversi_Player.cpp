@@ -170,10 +170,13 @@ string availableMoves(int n[8][8], int mine, int yours) {
 			}
 		}
 	}
+
 	return validMove;
 }
-int Stability(int n[8][8], int  mine, int yours) {
-	int yStab = 0;
+
+int Stability(int n[8][8], int  turn) {
+	int others = -1*turn;
+    int yStab = 0;
 	int xStab = 0;
 	int neStab = 0;
 	int nwStab = 0;
@@ -184,10 +187,10 @@ int Stability(int n[8][8], int  mine, int yours) {
 	int value = 0;
 	for (int i = 0; i < 8; i++) {
 		for (int j = 0; j < 8; j++) {
-			if (n[i][j] == mine) {
+			if (n[i][j] == turn) {
 				for (int k = i; k >= 0; k--) {//check up
 					yStab = 1;
-					if (n[k][j] != mine) {
+					if (n[k][j] != turn) {
 						yStab = 0;
 						break;
 					}
@@ -195,7 +198,7 @@ int Stability(int n[8][8], int  mine, int yours) {
 				if (!yStab) {
 					yStab = 1;
 					for (int k = i; k < 8; k++) {//check dwn
-						if (n[k][j] != mine) {
+						if (n[k][j] != turn) {
 							yStab = 0;
 							break;
 						}
@@ -203,7 +206,7 @@ int Stability(int n[8][8], int  mine, int yours) {
 				}
 				for (int l = j; l >= 0; l--) {//check lft
 					xStab = 1;
-					if (n[i][l] != mine) {
+					if (n[i][l] != turn) {
 						xStab = 0;
 						break;
 					}
@@ -211,7 +214,7 @@ int Stability(int n[8][8], int  mine, int yours) {
 				if (!xStab) {
 					xStab = 1;
 					for (int l = j; l < 8; l++) {//check rgt
-						if (n[i][l] != mine) {
+						if (n[i][l] != turn) {
 							xStab = 0;
 							break;
 						}
@@ -219,7 +222,7 @@ int Stability(int n[8][8], int  mine, int yours) {
 				}
 				for (int k = i, l = j; ((l >= 0) && (k >= 0)); k--, l--) {//check tp lft
 					neStab = 1;
-					if (n[i][l] != mine) {
+					if (n[i][l] != turn) {
 						neStab = 0;
 						break;
 					}
@@ -227,7 +230,7 @@ int Stability(int n[8][8], int  mine, int yours) {
 				if (!neStab) {
 					neStab = 1;
 					for (int k = i, l = j; ((k < 8) && (l < 8)); k++, l++) {//check rgt
-						if (n[i][l] != mine) {
+						if (n[i][l] != turn) {
 							neStab = 0;
 							break;
 						}
@@ -235,7 +238,7 @@ int Stability(int n[8][8], int  mine, int yours) {
 				}
 				for (int k = i, l = j; ((l < 8) && (k >= 0)); k--, l++) {//check tp lft
 					nwStab = 1;
-					if (n[i][l] != mine) {
+					if (n[i][l] != turn) {
 						nwStab = 0;
 						break;
 					}
@@ -243,130 +246,55 @@ int Stability(int n[8][8], int  mine, int yours) {
 				if (!nwStab) {
 					nwStab = 1;
 					for (int k = i, l = j; ((k < 8) && (l >= 0)); k++, l--) {//check rgt
-						if (n[i][l] != mine) {
+						if (n[i][l] != turn) {
 							nwStab = 0;
 							break;
 						}
 					}
 				}
 			}
-			else if (n[i][j] == yours) {
-				for (int k = i; k >= 0; k--) {//check up
-					oppyStab = 1;
-					if (n[k][j] != yours) {
-						oppyStab = 0;
-						break;
-					}
-				}
-				if (!oppyStab) {
-					oppyStab = 1;
-					for (int k = i; k < 8; k++) {//check dwn
-						if (n[k][j] != yours) {
-							oppyStab = 0;
-						}
-					}
-				}
-				for (int l = j; l >= 0; l--) {//check lft
-					oppxStab = 1;
-					if (n[i][l] != yours) {
-						oppxStab = 0;
-						break;
-					}
-				}
-				if (!oppxStab) {
-					oppxStab = 1;
-					for (int l = j; l < 8; l++) {//check rgt
-						if (n[i][l] != yours) {
-							oppxStab = 0;
-							break;
-						}
-					}
-				}
-				for (int k = i, l = j; ((l >= 0) && (k >= 0)); k--, l--) {//check tp lft
-					oppneStab = 1;
-					if (n[i][l] != yours) {
-						oppneStab = 0;
-						break;
-					}
-				}
-				if (!oppneStab) {
-					oppneStab = 1;
-					for (int k = i, l = j; ((k < 8) && (l < 8)); k++, l++) {//check rgt
-						if (n[i][l] != yours) {
-							oppneStab = 0;
-							break;
-						}
-					}
-				}
-				for (int k = i, l = j; ((l <8) && (k >= 0)); k--, l++) {//check tp lft
-					oppnwStab = 1;
-					if (n[i][l] != yours) {
-						oppnwStab = 0;
-						break;
-					}
-				}
-				if (!oppnwStab) {
-					oppnwStab = 1;
-					for (int k = i, l = j; ((k < 8) && (l >= 0)); k++, l--) {//check rgt
-						if (n[i][l] != yours) {
-							oppnwStab = 0;
-							break;
-						}
-					}
-				}
-
-
-			}
-
-			value = value + (yStab + xStab + neStab + nwStab)*(yStab + xStab + neStab + nwStab) - (oppyStab + oppxStab + oppneStab + oppyStab)*(oppyStab + oppxStab + oppneStab + oppyStab);
+            
+			value = value + (yStab + xStab + neStab + nwStab);
 
 		}
 	}
 
 	return value;
 }
+
 int Corner(int n[8][8], int mine, int yours) {//checks who the corners belong to
+//Checks Who owns the corners
 	signed int value = 0;
-	if (n[0][0] == mine) {
-		value++;
-	}
-	else if (n[0][0] == yours) {
-		value--;
-	}
-	if (n[0][8] == mine) {
-		value++;
-	}
-	else if (n[0][8] == yours) {
-		value--;
-	}
-	if (n[8][0] == mine) {
-		value++;
-	}
-	else if (n[8][0] == yours) {
-		value--;
-	}
-	if (n[8][8] == mine) {
-		value++;
-	}
-	else if (n[8][8] == yours) {
-		value--;
-	}
-	
+    value = mine * (n[0][0] + n[0][7] + n[7][0] + n[7][7]);
 	return value;
+
 }
-int shittySquares(int n[8][8], int mine, int yours) {
-	int value = 0;
-	value = -1 * (-5 * n[0][0] + n[1][0] + n[0][1] + 3 * n[1][1] + -5*n[0][7]+n[0][6] + n[1][7] + 3*n[1][6] + -5*n[7][0]+n[6][0] + 3 * n[6][1] + n[7][1] +  -5*n[7][7]+n[7][6] + 3 * n[6][6] + n[6][7]);
+
+int shittySquares(int n[8][8], int turn) {
+    //This evaluates what going on at the corners 
+    //______ This is a bad situation bc opponent can flip us 3 ways especially bad on the diagonal
+    //|-1| 1 
+    //| 1| 1
+
+	signed int value = 0;
+    signed int NWpossession = 5*n[0][0] + n[1][0] + n[0][1] + -3*n[1][1];
+    signed int SWpossession = 5*n[0][7] + n[0][6] + n[1][7] + -3*n[1][6];
+    signed int SEpossession = 5*n[7][0] + n[6][0] + -3*n[6][1] + n[7][1];
+    signed int NEpossession = 5*n[7][7] + n[7][6] + -3*n[6][6] + n[6][7];
+	value = turn*(NWpossession + SWpossession + SEpossession + NEpossession);
 	return value;
+
 }
 
 void possibleMove(int orig[8][8], int n[8][8],int r, int c, int mine, int yours) {//creates new board based upon move
-	for (int i = 0; i < 8; i++) {
+	//Create a new board based on original then set the 
+    for (int i = 0; i < 8; i++) {
 		for (int j = 0; j < 8; j++) {
 			n[i][j] = orig[i][j];
 		}
 	}
 	n[r][c] = mine;
+
 	int flipCounter = 0;
 	//check for turnings
 	for (int i = r - 1; i >= 0; i--) { //check up
@@ -508,33 +436,35 @@ void possibleMove(int orig[8][8], int n[8][8],int r, int c, int mine, int yours)
 
 	return;
 }
-int futureMoves(int n[8][8], int turn, int yours) {
+
+int futureMoves(int n[8][8], int turn) {
+    //Find how many possible Future moves we have
 	int value = 0;
 	for (int i = 0; i < 8; i++) {
 		for (int j = 0; j < 8; j++) {
 			if (n[i][j] == blank){
-				if ((i > 0) && (n[i - 1][j]==yours)) {//check up
+				if ((i > 0) && (n[i - 1][j] == -1*turn)) {//check up
 					value++;
 				}
-				if ((i < 7) && (n[i + 1][j] == yours)){//check dwn
+				if ((i < 7) && (n[i + 1][j] == -1*turn)){//check dwn
 					value++;
 				}
-				if ((j > 0) && (n[i][j-1] == yours)) {//check left
+				if ((j > 0) && (n[i][j-1] == -1*turn)) {//check left
 					value++;
 				}
-				if ((j<7) && (n[i][j+1] == yours)) {//check right
+				if ((j<7) && (n[i][j+1] == -1*turn)) {//check right
 					value++;
 				}
-				if (((i > 0)&&(j > 0)) && (n[i-1][j-1] == yours)){//check top left
+				if (((i > 0) && (j > 0)) && (n[i-1][j-1] == -1*turn)){//check top left
 					value++;
 				}
-				if (((i > 0) && (j <7)) && (n[i-1][j+1] == yours)){//check top right
+				if (((i > 0) && (j < 7)) && (n[i-1][j+1] == -1*turn)){//check top right
 					value++;
 				}
-				if (((i<7)&&(j>0))&&(n[i+1][j-1] == yours)) {//check bottom left
+				if (((i < 7) && (j > 0)) && (n[i+1][j-1] == -1*turn)) {//check bottom left
 					value++;
 				}
-				if (((i<7)&&(j<7)) && (n[i+1][j+1] == yours)) {//check bottom right
+				if (((i < 7) && (j < 7)) && (n[i+1][j+1] == -1*turn)) {//check bottom right
 					value++;
 				}
 			}
@@ -543,22 +473,15 @@ int futureMoves(int n[8][8], int turn, int yours) {
 
 	return value;
 }
-bool isterminal(int state[8][8], int t)
-{
-	moves = availableMoves(state, t, t*-1);
+
+bool isterminal(int state[8][8], int turn){ //Are there no more moves available to me?
+	moves = availableMoves(state, turn, turn*-1);
 	if (moves == "b") {
 		return 1;
 	}
-	/*for (int i = 0; i < 8; i++) {
-		for (int j = 0; j < 8; j++) {
-			if (state[i][j] != blank) {
-				return 0;
-			}
-		}
-	}
-	*/
 	return 0;
 }
+
 int moveNum(stateType n[8][8], int mine, int yours, int refind) {//counts the number of available moves for mine
 	if (refind) {
 		int num = (availableMoves(n, mine,yours).length() - 1) / 2;
@@ -567,11 +490,9 @@ int moveNum(stateType n[8][8], int mine, int yours, int refind) {//counts the nu
 	else {
 		int num = (moves.length() - 1) / 2;
 		return num;
-	}
-	
-	
-	
+	}	
 }
+
 void expand(stateType state[8][8], string  successor[], int &sn, int turn)
 {
 	
@@ -586,13 +507,14 @@ void expand(stateType state[8][8], string  successor[], int &sn, int turn)
 	//	swap(successor[0],successor[2]);
 
 }
+
 int Eval(int n[8][8], int turn) { //Evaluate the State of the board. Return a value representing  
-	int s = stabMulti * Stability(n, turn, turn*-1) - oppStabMulti * Stability(n, -1*turn, turn);
+	int s = stabMulti * Stability(n,turn) - oppStabMulti * Stability(n, -1*turn);
 	int c = CornerMulti*Corner(n, turn, turn*-1);
 	int m = moveNumMulti * moveNum(n, turn, turn*-1, 1);
 
 	int o = -OppMoveMulti * moveNum(n, -1*turn, turn, 1);
-	int ss = shitty * shittySquares(n, turn, turn*-1);
+	int ss = shitty * shittySquares(n, turn);
 	//int fm = fmMulti* futureMoves(n, turn, turn*-1);
 	/*cout << "movenum " << m << endl;
 	cout << "fm " << fm << endl;
@@ -671,21 +593,23 @@ int alphabeta(stateType state[8][8], int maxDepth, int curDepth, int alpha, int 
 	
 }
 
+
 int main()
 {
 	//int n[8][8] = { 0 };
 
     //Test board 1 represents Self -1 represents opponent
-	int n[8][8] = {
+	/*int n[8][8] = {
         {0,0,0,0,0,0,0,0},
         {0,0,0,0,0,0,0,0},
-        {0,0,0,0,1,0,0,0},
-        {0,0,0,1,1,0,0,0},
-        {0,0,0,-1,1,0,0,0},
         {0,0,0,0,0,0,0,0},
+        {0,0,0,1,-1,0,0,0},
+        {0,0,1,1,-1,0,0,0},
+        {0,0,0,0,-1,0,0,0},
         {0,0,0,0,0,0,0,0},
         {0,0,0,0,0,0,0,0}};
-	//n[3][3] = oppColor;
+	*/
+    //n[3][3] = oppColor;
 	//n[4][4] = oppColor;
 	//n[3][4] = myColor;
 	//n[4][3] = myColor;
@@ -693,7 +617,39 @@ int main()
 	//cin >> UserInput;
     //n int(UserInput)
     //getGameBoard(n);
-	int value = alphabeta(n, 4, 0, VS, VL);
+    int board[8][8] = { 0 };
+    ifstream fp("board.txt");
+    if (! fp) {
+        cout << "Error, file couldn't be opened" << endl;  
+    }
+
+    for(int row = 0; row < 8; row++) {  // stop loops if nothing to read
+        for(int column = 0; column < 8; column++){
+            fp >> board[row][column];
+            if ( ! fp ) {
+                cout << "Error reading file for element " << row << "," << column << endl; 
+             
+            }
+    
+        }
+    }
+    
+    for(int row = 0; row < 8; row++) {  // stop loops if nothing to read
+        for(int column = 0; column < 8; column++){
+            cout << board[row][column];
+            if ( ! fp ) {
+                cout << "Error reading file for element " << row << "," << column << endl; 
+             
+            }
+    
+        }
+        cout << endl;
+    }
+    
+
+
+
+	int value = alphabeta(board, 4, 0, VS, VL);
 	cout << "best value " << value  << endl;
 	cout << "move " << best << endl;
 	cout << nodecount << endl;
