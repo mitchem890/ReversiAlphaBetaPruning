@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShallowBrain Reversi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: #f4f4f4;
+        }
+        #game-container {
+            width: 100%;
+            max-width: 424px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #game-options {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 16px;
+            flex-grow: 1;
+            white-space: normal;
+            min-height: 60px;
+        }
+        #game {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            background-color: #008000;
+            width: 100%;
+            max-width: 424px;
+            aspect-ratio: 1 / 1;
+            padding: 4px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .cell {
+            background-color: #00a000;
+            border: 1px solid #008000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            aspect-ratio: 1 / 1;
+            border-radius: 5px;
+        }
+        .disc {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        .black { background-color: black; }
+        .white { background-color: white; }
+        #status {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            width: 100%;
+            word-wrap: break-word;
+        }
+        #how-to-play-link {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #how-to-play-link a {
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        #how-to-play-link a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 480px) {
+            #game-options {
+                flex-direction: column;
+            }
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        #top-links {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #top-links a {
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+        #top-links a:hover {
+            text-decoration: underline;
+        }
+        #difficulty-selector {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .difficulty-options {
+            display: inline-flex;
+            background-color: #e0e0e0;
+            border-radius: 25px;
+            padding: 5px;
+        }
+        .difficulty-options input[type="radio"] {
+            display: none;
+        }
+        .difficulty-options label {
+            padding: 8px 15px;
+            font-size: 14px;
+            color: #333;
+            background-color: transparent;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .difficulty-options input[type="radio"]:checked + label {
+            background-color: #2c3e50;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>ShallowBrain Reversi</h1>
+        <div id="top-links">
+            <a href="{{ url_for('how_to_play') }}">How to Play</a>
+            <a href="{{ url_for('what_is_shallowbrain') }}">What is ShallowBrain?</a>
+        </div>
+        <div id="difficulty-selector">
+            <div class="difficulty-options">
+                <input type="radio" id="easy" name="difficulty" value="1">
+                <label for="easy">Easy</label>
+                <input type="radio" id="medium" name="difficulty" value="2">
+                <label for="medium">Medium</label>
+                <input type="radio" id="hard" name="difficulty" value="3" checked>
+                <label for="hard">Hard</label>
+                <input type="radio" id="expert" name="difficulty" value="4">
+                <label for="expert">Expert</label>
+                <input type="radio" id="master" name="difficulty" value="5">
+                <label for="master">Master</label>
+            </div>
+        </div>
+        <div id="game-options">
+            <button id="two-player">Two Player</button>
+            <button id="ai-black">Play as Black vs ShallowBrain</button>
+            <button id="ai-white">Play as White vs ShallowBrain</button>
+        </div>
+        <div id="game"></div>
+        <div id="status"></div>
+    </div>
+    <script>
+        const game = document.getElementById('game');
+        const status = document.getElementById('status');
+        let currentPlayer = 'black';
+        let board = Array(8).fill().map(() => Array(8).fill(null));
+        let gameMode = null;
+        let aiPlayer = null;
+        let isAIThinking = false;
+
+        let difficulty = 3; // Default difficulty
+
+        document.querySelectorAll('input[name="difficulty"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                difficulty = parseInt(this.value);
+                if (difficulty >= 4) {
+                    alert("Warning: Higher difficulties may cause ShallowBrain to think for longer periods.");
+                }
+            });
+        });
+
+        async function makeAIMove() {
+            isAIThinking = true;
+            updateStatus();
+            disableBoard();
+
+            const response = await fetch('/get_ai_move', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    board: board,
+                    current_player: currentPlayer,
+                    difficulty: difficulty
+                }),
+            });
+            const data = await response.json();
+            if (data.move) {
+                const [row, col] = data.move;
+                makeMove(row, col);
+                currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                isAIThinking = false;
+                updateStatus();
+                enableBoard();
+                checkGameState();
+            }
+        }
+
+        function initializeGame() {
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    cell.addEventListener('click', handleClick);
+                    game.appendChild(cell);
+                }
+            }
+            setDisc(3, 3, 'white');
+            setDisc(3, 4, 'black');
+            setDisc(4, 3, 'black');
+            setDisc(4, 4, 'white');
+            updateStatus();
+            document.getElementById('two-player').addEventListener('click', () => startGame('two-player'));
+            document.getElementById('ai-black').addEventListener('click', () => startGame('ai', 'white'));
+            document.getElementById('ai-white').addEventListener('click', () => startGame('ai', 'black'));
+        }
+
+        let playerColor = null;  // Add this line to track the player's color
+
+        function startGame(mode, aiColor = null) {
+            gameMode = mode;
+            aiPlayer = aiColor;
+            playerColor = aiColor ? (aiColor === 'black' ? 'white' : 'black') : null;  // Set player color
+            resetBoard();
+            updateStatus();
+            if (gameMode === 'ai' && currentPlayer === aiPlayer) {
+                makeAIMove();
+            }
+        }
+
+        function resetBoard() {
+            board = Array(8).fill().map(() => Array(8).fill(null));
+            game.innerHTML = '';
+            currentPlayer = 'black';
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    cell.addEventListener('click', handleClick);
+                    game.appendChild(cell);
+                }
+            }
+            setDisc(3, 3, 'white');
+            setDisc(3, 4, 'black');
+            setDisc(4, 3, 'black');
+            setDisc(4, 4, 'white');
+        }
+
+        function setDisc(row, col, color) {
+            board[row][col] = color;
+            const cell = game.children[row * 8 + col];
+            const disc = document.createElement('div');
+            disc.className = `disc ${color}`;
+            cell.innerHTML = '';
+            cell.appendChild(disc);
+        }
+
+        function handleClick(e) {
+            if (gameMode === null || isAIThinking) return;
+            if (gameMode === 'ai' && currentPlayer === aiPlayer) return;
+
+            const row = parseInt(e.target.dataset.row);
+            const col = parseInt(e.target.dataset.col);
+            if (isValidMove(row, col)) {
+                makeMove(row, col);
+                currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                updateStatus();
+                checkGameState();
+
+                if (gameMode === 'ai' && currentPlayer === aiPlayer) {
+                    setTimeout(makeAIMove, 500);
+                }
+            }
+        }
+
+        function isValidMove(row, col) {
+            if (board[row][col] !== null) return false;
+            const directions = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+            return directions.some(dir => {
+                let [r, c] = [row + dir[0], col + dir[1]];
+                if (r < 0 || r >= 8 || c < 0 || c >= 8 || board[r][c] !== (currentPlayer === 'black' ? 'white' : 'black')) return false;
+                while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                    if (board[r][c] === null) return false;
+                    if (board[r][c] === currentPlayer) return true;
+                    r += dir[0];
+                    c += dir[1];
+                }
+                return false;
+            });
+        }
+
+        function makeMove(row, col) {
+            setDisc(row, col, currentPlayer);
+            const directions = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+            directions.forEach(dir => {
+                let [r, c] = [row + dir[0], col + dir[1]];
+                let toFlip = [];
+                while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === (currentPlayer === 'black' ? 'white' : 'black')) {
+                    toFlip.push([r, c]);
+                    r += dir[0];
+                    c += dir[1];
+                }
+                if (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === currentPlayer) {
+                    toFlip.forEach(([fr, fc]) => setDisc(fr, fc, currentPlayer));
+                }
+            });
+        }
+
+        function hasValidMove() {
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if (isValidMove(i, j)) return true;
+                }
+            }
+            return false;
+        }
+
+        function updateStatus() {
+            const blackCount = board.flat().filter(cell => cell === 'black').length;
+            const whiteCount = board.flat().filter(cell => cell === 'white').length;
+            let statusText = `⚫ ${blackCount} | ⚪ ${whiteCount}`;
+            
+            if (gameMode === 'ai') {
+                const playerEmoji = playerColor === 'black' ? '⚫' : '⚪';
+                const aiEmoji = aiPlayer === 'black' ? '⚫' : '⚪';
+                statusText = `You ${playerEmoji} ${playerColor === 'black' ? blackCount : whiteCount} | ` +
+                             `AI ${aiEmoji} ${aiPlayer === 'black' ? blackCount : whiteCount}`;
+            }
+            
+            if (isAIThinking) {
+                statusText += ` | AI is thinking...`;
+            } else {
+                const turnEmoji = currentPlayer === 'black' ? '⚫' : '⚪';
+                statusText += ` | Current turn: ${turnEmoji}`;
+            }
+            
+            status.textContent = statusText;
+        }
+
+        function disableBoard() {
+            game.style.pointerEvents = 'none';
+        }
+
+        function enableBoard() {
+            game.style.pointerEvents = 'auto';
+        }
+
+        function checkGameState() {
+            if (!hasValidMove()) {
+                currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                updateStatus();
+                if (!hasValidMove()) {
+                    endGame();
+                } else if (gameMode === 'ai' && currentPlayer === aiPlayer) {
+                    setTimeout(makeAIMove, 500);
+                }
+            }
+        }
+
+        function endGame() {
+            const blackCount = board.flat().filter(cell => cell === 'black').length;
+            const whiteCount = board.flat().filter(cell => cell === 'white').length;
+            let winner = blackCount > whiteCount ? '⚫' : (whiteCount > blackCount ? '⚪' : 'Tie');
+            
+            let statusText;
+            if (gameMode === 'ai') {
+                const playerEmoji = playerColor === 'black' ? '⚫' : '⚪';
+                const aiEmoji = aiPlayer === 'black' ? '⚫' : '⚪';
+                const playerScore = playerColor === 'black' ? blackCount : whiteCount;
+                const aiScore = aiPlayer === 'black' ? blackCount : whiteCount;
+                statusText = `Game Over! ${winner} wins! ` +
+                             `You ${playerEmoji} ${playerScore} | ` +
+                             `AI ${aiEmoji} ${aiScore}`;
+            } else {
+                statusText = `Game Over! ${winner} wins! ⚫ ${blackCount} | ⚪ ${whiteCount}`;
+            }
+            
+            status.textContent = statusText;
+            status.textContent += ' Click a button to play again.';
+            gameMode = null;
+        }
+
+        initializeGame();
+    </script>
+</body>
+</html>

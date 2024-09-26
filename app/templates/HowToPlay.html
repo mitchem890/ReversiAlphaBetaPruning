@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Play Reversi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>How to Play Reversi</h1>
+    </header>
+    
+    <main>
+        <section>
+            <h2>Game Setup</h2>
+            <p>Reversi is played on an 8x8 board. The game begins with four discs placed in the center of the board in a square pattern: two black discs and two white discs, with same-colored discs on a diagonal.</p>
+            <img src="{{ url_for('static', filename='images/reversi-setup.png') }}" alt="Reversi board setup">
+        </section>
+
+        <section>
+            <h2>Basic Rules</h2>
+            <ol>
+                <li>Black always moves first. Players take turns placing one disc of their color on the board.</li>
+                <li>A valid move must outflank at least one opponent's disc. Outflanking means placing a disc so that it traps a line of your opponent's discs between your newly placed disc and another of your discs already on the board.</li>
+                <li>After placing a disc, any of the opponent's discs that are outflanked are flipped to your color.</li>
+                <li>If a player cannot make a valid move, their turn is skipped and the opponent moves again.</li>
+            </ol>
+            <img src="{{ url_for('static', filename='images/reversi-move-example.png') }}" alt="Example of a valid move">
+        </section>
+
+        <section>
+            <h2>Winning the Game</h2>
+            <p>The game ends when neither player can make a valid move. This usually occurs when the board is full. The player with the most discs of their color on the board wins. If both players have the same number of discs, the game is a tie.</p>
+            <img src="{{ url_for('static', filename='images/reversi-endgame.png') }}" alt="Reversi endgame example">
+        </section>
+
+        <section>
+            <h2>Strategy Tips</h2>
+            <ul>
+                <li>Try to control the corners of the board, as discs placed there can't be outflanked.</li>
+                <li>Be cautious about placing discs near the edges early in the game, as these can give your opponent opportunities to capture corners.</li>
+                <li>Sometimes, having fewer discs mid-game can be advantageous, as it gives you more options for moves in the late game.</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <a href="{{ url_for('index') }}">Back to Game</a>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShallowBrain - Alpha-Beta Pruning</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>ShallowBrain: Alpha-Beta Pruning</h1>
+    </header>
+
+    <main>
+        <section>
+            <h2>About ShallowBrain</h2>
+            <p>ShallowBrain is a simple AI for the game of reversi. It was created for an AI reversi tournament at Southern University of Illinois: Edwardsville in 2016. The AI placed Second in the competition 🥈. I found this code on an old harddrive and wanted to frakenstien it back to life. ShallowBrain uses an Algorythim called Alpha-Beta Pruning to find the best move.</p>
+        </section>
+
+        <section>
+            <h2>What is Alpha-Beta Pruning?</h2>
+            <p>Alpha-beta pruning is a technique used to make game-playing algorithms more efficient. It works by assigning board states a score and playing out multiple games each turn. It creates a search tree out of these games states. It then eliminates branches of the search tree that don't need to be explored, allowing the algorithm to search deeper in less time.</p>
+
+            <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/AB_pruning.svg" alt="Alpha-Beta Pruning Diagram">
+            <p><em>Alpha-Beta Pruning Diagram (Source: Wikipedia)</em></p>
+
+            <p>This optimization help game engines like ShallowBrain make (sometimes) better decisions by considering more possible moves without drastically increasing computation time.</p>
+        </section>
+    </main>
+
+    <footer>
+        <a href="/">Back to Home</a>
+    </footer>
+</body>
+</html>
