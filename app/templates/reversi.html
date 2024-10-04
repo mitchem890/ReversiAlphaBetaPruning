@@ -141,6 +141,119 @@
             background-color: #2c3e50;
             color: #fff;
         }
+        #ai-selector {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .ai-options {
+            display: inline-flex;
+            background-color: #e0e0e0;
+            border-radius: 25px;
+            padding: 5px;
+        }
+        .ai-options input[type="radio"] {
+            display: none;
+        }
+        .ai-options label {
+            padding: 8px 15px;
+            font-size: 14px;
+            color: #333;
+            background-color: transparent;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .ai-options input[type="radio"]:checked + label {
+            background-color: #2c3e50;
+            color: #fff;
+        }
+        .selected-mode {
+            background-color: #2c3e50;
+            color: white;
+        }
+        .banner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            padding: 20px;
+            text-align: center;
+            display: none;
+            max-width: 90%;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #win-banner {
+            background-color: #f0f0f0;
+            color: black;
+            border: 2px solid black;
+            max-width: 600px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        #lose-banner {
+            background-color: #f0f0f0;
+            color: black;
+            border: 2px solid black;
+            max-width: 600px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        .newspaper h1 {
+            font-size: 36px;
+            border-bottom: 2px solid black;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .newspaper h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .newspaper p {
+            font-size: 16px;
+            line-height: 1.4;
+        }
+        .close-banner {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            100% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        /* Media query for mobile devices */
+        @media (max-width: 600px) {
+            .banner {
+                padding: 15px;
+            }
+            #win-banner {
+                font-size: 20px;
+            }
+            .newspaper h1 {
+                font-size: 24px;
+            }
+            .newspaper h2 {
+                font-size: 20px;
+            }
+            .newspaper p {
+                font-size: 14px;
+            }
+            .close-banner {
+                padding: 8px 16px;
+                font-size: 16px;
+            }
+        }
+
+        #change-status {
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -154,9 +267,9 @@
             <div class="difficulty-options">
                 <input type="radio" id="easy" name="difficulty" value="1">
                 <label for="easy">Easy</label>
-                <input type="radio" id="medium" name="difficulty" value="2">
+                <input type="radio" id="medium" name="difficulty" value="2" checked>
                 <label for="medium">Medium</label>
-                <input type="radio" id="hard" name="difficulty" value="3" checked>
+                <input type="radio" id="hard" name="difficulty" value="3">
                 <label for="hard">Hard</label>
                 <input type="radio" id="expert" name="difficulty" value="4">
                 <label for="expert">Expert</label>
@@ -164,14 +277,41 @@
                 <label for="master">Master</label>
             </div>
         </div>
+        <div id="ai-selector">
+            <div class="ai-options">
+                <input type="radio" id="shallowbrain1" name="ai-version" value="1" checked>
+                <label for="shallowbrain1">ShallowBrain 1</label>
+                <input type="radio" id="shallowbrain2" name="ai-version" value="2">
+                <label for="shallowbrain2">ShallowBrain 2</label>
+                <input type="radio" id="db1" name="ai-version" value="3">
+                <label for="db1">DB1</label>
+            </div>
+        </div>
         <div id="game-options">
             <button id="two-player">Two Player</button>
             <button id="ai-black">Play as Black vs ShallowBrain</button>
             <button id="ai-white">Play as White vs ShallowBrain</button>
         </div>
+        <div id="change-status" style="display: none;"></div>
         <div id="game"></div>
         <div id="status"></div>
     </div>
+
+    <!-- Add these banner elements -->
+    <div id="win-banner" class="banner newspaper">
+        <h1>Victory!</h1>
+        <h2>You've Outsmarted AI</h2>
+        <p>Congrats you beat <span id="win-ai-details"></span></p>
+        <button class="close-banner">Close</button>
+    </div>
+
+    <div id="lose-banner" class="banner newspaper">
+        <h1>Defeat</h1>
+        <h2>Local Loser Destroyed by Robot</h2>
+        <p>Defeated by <span id="lose-ai-details"></span></p>
+        <button class="close-banner">Close</button>
+    </div>
+
     <script>
         const game = document.getElementById('game');
         const status = document.getElementById('status');
@@ -181,42 +321,188 @@
         let aiPlayer = null;
         let isAIThinking = false;
 
-        let difficulty = 3; // Default difficulty
+        let difficulty = 2; // Set default difficulty to medium (2)
+        let aiVersion = 1; // Default AI version
+
+        let initialDifficulty;
+        let initialAIVersion; // Add this line
+        let difficultyChangedMidGame = false;
+        let aiVersionChangedMidGame = false; // Add this line
+
+        let errorMessage = ''; // Add this at the top of your script, with other global variables
+        let isGameOver = false; // Add this at the top of your script with other global variables
+
+        let changeStatus = document.getElementById('change-status');
+
+        function updateChangeStatus() {
+            if (difficultyChangedMidGame || aiVersionChangedMidGame) {
+                let message = '';
+                if (difficultyChangedMidGame) {
+                    message += 'Difficulty changed mid-game!';
+                }
+                if (aiVersionChangedMidGame) {
+                    if (message) message += ' ';
+                    message += 'AI version changed mid-game!';
+                }
+                changeStatus.textContent = message;
+                changeStatus.style.display = 'block';
+            } else {
+                changeStatus.style.display = 'none';
+            }
+        }
 
         document.querySelectorAll('input[name="difficulty"]').forEach(radio => {
             radio.addEventListener('change', function() {
-                difficulty = parseInt(this.value);
+                let newDifficulty = parseInt(this.value);
+                if (gameMode === 'ai' && !isGameOver) {
+                    if (newDifficulty !== initialDifficulty) {
+                        difficultyChangedMidGame = true;
+                        updateChangeStatus();
+                    }
+                }
+                difficulty = newDifficulty;
                 if (difficulty >= 4) {
-                    alert("Warning: Higher difficulties may cause ShallowBrain to think for longer periods.");
+                    alert("Warning: Expert and Master difficulties may cause the AI to think for extended periods (20-45 seconds per move).");
                 }
             });
         });
 
-        async function makeAIMove() {
+        document.querySelectorAll('input[name="ai-version"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                let newAIVersion = parseInt(this.value);
+                if (gameMode === 'ai' && !isGameOver) {
+                    if (newAIVersion !== initialAIVersion) {
+                        aiVersionChangedMidGame = true;
+                        updateChangeStatus();
+                    }
+                }
+                aiVersion = newAIVersion;
+            });
+        });
+
+        function updateStatus() {
+            const blackCount = board.flat().filter(cell => cell === 'black').length;
+            const whiteCount = board.flat().filter(cell => cell === 'white').length;
+            let statusText = `⚫ ${blackCount} | ⚪ ${whiteCount}`;
+            
+            if (gameMode === 'ai') {
+                const playerEmoji = playerColor === 'black' ? '⚫' : '⚪';
+                const aiEmoji = aiPlayer === 'black' ? '⚫' : '⚪';
+                statusText = `You ${playerEmoji} ${playerColor === 'black' ? blackCount : whiteCount} | ` +
+                             `AI ${aiEmoji} ${aiPlayer === 'black' ? blackCount : whiteCount}`;
+            }
+            
+            if (isAIThinking) {
+                statusText += ` | AI is thinking...`;
+            } else {
+                const turnEmoji = currentPlayer === 'black' ? '⚫' : '⚪';
+                statusText += ` | Current turn: ${turnEmoji}`;
+            }
+            
+            if (errorMessage) {
+                statusText += ` | ${errorMessage}`;
+            }
+            
+            status.textContent = statusText;
+        }
+
+        async function makeAIMove(retryCount = 0) {
+            const MAX_RETRIES = 3;
+            const RETRY_DELAY = 2000; // 2 seconds
+
+            // Add this check at the beginning of the function
+            if (isGameOver) {
+                console.log("Game is over, not making AI move");
+                return;
+            }
+
             isAIThinking = true;
+            errorMessage = ''; // Clear any previous error message
             updateStatus();
             disableBoard();
+            removeRetryButton(); // Remove any existing retry button
 
-            const response = await fetch('/get_ai_move', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    board: board,
-                    current_player: currentPlayer,
-                    difficulty: difficulty
-                }),
-            });
-            const data = await response.json();
-            if (data.move) {
-                const [row, col] = data.move;
-                makeMove(row, col);
-                currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
+                const response = await fetch('/get_ai_move', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        board: board,
+                        current_player: currentPlayer,
+                        difficulty: difficulty,
+                        ai_version: aiVersion
+                    }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.move) {
+                    const [row, col] = data.move;
+                    makeMove(row, col);
+                    currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                    checkGameState();
+                    
+                    // Display performance logs
+                    console.log("AI Performance:", data.logs);
+                    status.textContent += ` | ${data.logs}`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                
+                if (retryCount < MAX_RETRIES) {
+                    errorMessage = `AI move failed. Retrying in ${RETRY_DELAY / 1000} seconds... (Attempt ${retryCount + 1}/${MAX_RETRIES})`;
+                    updateStatus();
+                    setTimeout(() => makeAIMove(retryCount + 1), RETRY_DELAY);
+                    return;
+                }
+
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Unable to connect to the AI server. Please check your internet connection and try again.';
+                } else if (error.name === 'AbortError') {
+                    errorMessage = 'AI move request timed out. Please try again or choose a lower difficulty.';
+                } else if (error.message.includes('HTTP error! status: 500')) {
+                    errorMessage = 'Server error occurred. The game might be over or in an invalid state.';
+                    checkGameState(); // Add this line to re-check the game state
+                } else {
+                    errorMessage = 'An error occurred while getting the AI move. Please try again.';
+                }
+                
+                updateStatus();
+                addRetryButton();
+            } finally {
                 isAIThinking = false;
                 updateStatus();
                 enableBoard();
-                checkGameState();
+            }
+        }
+
+        function addRetryButton() {
+            removeRetryButton(); // Remove any existing retry button first
+            const retryButton = document.createElement('button');
+            retryButton.textContent = 'Retry AI Move';
+            retryButton.id = 'retryButton';
+            retryButton.onclick = () => {
+                errorMessage = '';
+                makeAIMove();
+            };
+            document.getElementById('game-container').appendChild(retryButton);
+        }
+
+        function removeRetryButton() {
+            const existingButton = document.getElementById('retryButton');
+            if (existingButton) {
+                existingButton.remove();
             }
         }
 
@@ -236,6 +522,7 @@
             setDisc(4, 3, 'black');
             setDisc(4, 4, 'white');
             updateStatus();
+            resetGameModeButtons();
             document.getElementById('two-player').addEventListener('click', () => startGame('two-player'));
             document.getElementById('ai-black').addEventListener('click', () => startGame('ai', 'white'));
             document.getElementById('ai-white').addEventListener('click', () => startGame('ai', 'black'));
@@ -244,14 +531,45 @@
         let playerColor = null;  // Add this line to track the player's color
 
         function startGame(mode, aiColor = null) {
+            isGameOver = false; // Reset the game state
+            errorMessage = ''; // Clear any existing error message
+            removeRetryButton(); // Remove retry button when starting a new game
             gameMode = mode;
             aiPlayer = aiColor;
-            playerColor = aiColor ? (aiColor === 'black' ? 'white' : 'black') : null;  // Set player color
+            playerColor = aiColor ? (aiColor === 'black' ? 'white' : 'black') : null;
             resetBoard();
             updateStatus();
+            enableBoard(); // Add this line to re-enable the board
+            
+            // Reset difficulty and AI version trackers and status
+            initialDifficulty = difficulty;
+            initialAIVersion = aiVersion;
+            difficultyChangedMidGame = false;
+            aiVersionChangedMidGame = false;
+            updateChangeStatus();
+            
+            // Remove 'selected-mode' class from all buttons
+            document.querySelectorAll('#game-options button').forEach(btn => btn.classList.remove('selected-mode'));
+            
+            // Add 'selected-mode' class to the clicked button
+            if (mode === 'two-player') {
+                document.getElementById('two-player').classList.add('selected-mode');
+            } else if (mode === 'ai') {
+                if (aiColor === 'white') {
+                    document.getElementById('ai-black').classList.add('selected-mode');
+                } else {
+                    document.getElementById('ai-white').classList.add('selected-mode');
+                }
+            }
+
             if (gameMode === 'ai' && currentPlayer === aiPlayer) {
                 makeAIMove();
             }
+
+            // Hide any visible banners when starting a new game
+            document.querySelectorAll('.banner').forEach(banner => {
+                hideBanner(banner);
+            });
         }
 
         function resetBoard() {
@@ -272,6 +590,7 @@
             setDisc(3, 4, 'black');
             setDisc(4, 3, 'black');
             setDisc(4, 4, 'white');
+            enableBoard(); // Add this line to ensure the board is enabled after reset
         }
 
         function setDisc(row, col, color) {
@@ -284,7 +603,7 @@
         }
 
         function handleClick(e) {
-            if (gameMode === null || isAIThinking) return;
+            if (gameMode === null || isAIThinking || isGameOver) return;
             if (gameMode === 'ai' && currentPlayer === aiPlayer) return;
 
             const row = parseInt(e.target.dataset.row);
@@ -292,12 +611,7 @@
             if (isValidMove(row, col)) {
                 makeMove(row, col);
                 currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
-                updateStatus();
                 checkGameState();
-
-                if (gameMode === 'ai' && currentPlayer === aiPlayer) {
-                    setTimeout(makeAIMove, 500);
-                }
             }
         }
 
@@ -334,35 +648,29 @@
             });
         }
 
-        function hasValidMove() {
+        function hasValidMove(player) {
             for (let i = 0; i < 8; i++) {
                 for (let j = 0; j < 8; j++) {
-                    if (isValidMove(i, j)) return true;
+                    if (isValidMoveForPlayer(i, j, player)) return true;
                 }
             }
             return false;
         }
 
-        function updateStatus() {
-            const blackCount = board.flat().filter(cell => cell === 'black').length;
-            const whiteCount = board.flat().filter(cell => cell === 'white').length;
-            let statusText = `⚫ ${blackCount} | ⚪ ${whiteCount}`;
-            
-            if (gameMode === 'ai') {
-                const playerEmoji = playerColor === 'black' ? '⚫' : '⚪';
-                const aiEmoji = aiPlayer === 'black' ? '⚫' : '⚪';
-                statusText = `You ${playerEmoji} ${playerColor === 'black' ? blackCount : whiteCount} | ` +
-                             `AI ${aiEmoji} ${aiPlayer === 'black' ? blackCount : whiteCount}`;
-            }
-            
-            if (isAIThinking) {
-                statusText += ` | AI is thinking...`;
-            } else {
-                const turnEmoji = currentPlayer === 'black' ? '⚫' : '⚪';
-                statusText += ` | Current turn: ${turnEmoji}`;
-            }
-            
-            status.textContent = statusText;
+        function isValidMoveForPlayer(row, col, player) {
+            if (board[row][col] !== null) return false;
+            const directions = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+            return directions.some(dir => {
+                let [r, c] = [row + dir[0], col + dir[1]];
+                if (r < 0 || r >= 8 || c < 0 || c >= 8 || board[r][c] !== (player === 'black' ? 'white' : 'black')) return false;
+                while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                    if (board[r][c] === null) return false;
+                    if (board[r][c] === player) return true;
+                    r += dir[0];
+                    c += dir[1];
+                }
+                return false;
+            });
         }
 
         function disableBoard() {
@@ -374,38 +682,123 @@
         }
 
         function checkGameState() {
-            if (!hasValidMove()) {
+            if (isGameOver) return;
+
+            let blackHasMove = hasValidMove('black');
+            let whiteHasMove = hasValidMove('white');
+
+            if (!blackHasMove && !whiteHasMove) {
+                endGame();
+                return;
+            }
+
+            if (!hasValidMove(currentPlayer)) {
                 currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
                 updateStatus();
-                if (!hasValidMove()) {
-                    endGame();
-                } else if (gameMode === 'ai' && currentPlayer === aiPlayer) {
+                if (gameMode === 'ai' && currentPlayer === aiPlayer && !isGameOver) {
                     setTimeout(makeAIMove, 500);
                 }
+                return;
+            }
+
+            updateStatus();
+
+            if (gameMode === 'ai' && currentPlayer === aiPlayer && !isGameOver) {
+                setTimeout(makeAIMove, 500);
             }
         }
 
         function endGame() {
+            isGameOver = true;
             const blackCount = board.flat().filter(cell => cell === 'black').length;
             const whiteCount = board.flat().filter(cell => cell === 'white').length;
-            let winner = blackCount > whiteCount ? '⚫' : (whiteCount > blackCount ? '⚪' : 'Tie');
-            
+            let winner;
+            if (blackCount > whiteCount) {
+                winner = 'Black';
+            } else if (whiteCount > blackCount) {
+                winner = 'White';
+            } else {
+                winner = 'Tie';
+            }
+
             let statusText;
             if (gameMode === 'ai') {
-                const playerEmoji = playerColor === 'black' ? '⚫' : '⚪';
-                const aiEmoji = aiPlayer === 'black' ? '⚫' : '⚪';
-                const playerScore = playerColor === 'black' ? blackCount : whiteCount;
-                const aiScore = aiPlayer === 'black' ? blackCount : whiteCount;
-                statusText = `Game Over! ${winner} wins! ` +
-                             `You ${playerEmoji} ${playerScore} | ` +
-                             `AI ${aiEmoji} ${aiScore}`;
+                if ((playerColor === 'black' && blackCount > whiteCount) || 
+                    (playerColor === 'white' && whiteCount > blackCount)) {
+                    statusText = `You win! ⚫ ${blackCount} | ⚪ ${whiteCount}`;
+                    showBanner('win');
+                } else if (winner === 'Tie') {
+                    statusText = `It's a tie! ⚫ ${blackCount} | ⚪ ${whiteCount}`;
+                } else {
+                    statusText = `AI wins! ⚫ ${blackCount} | ⚪ ${whiteCount}`;
+                    showBanner('lose');
+                }
             } else {
                 statusText = `Game Over! ${winner} wins! ⚫ ${blackCount} | ⚪ ${whiteCount}`;
             }
             
             status.textContent = statusText;
             status.textContent += ' Click a button to play again.';
-            gameMode = null;
+            
+            disableBoard();
+        }
+
+        function getAIDetails() {
+            let aiName;
+            switch(aiVersion) {
+                case 1: aiName = "ShallowBrain 1"; break;
+                case 2: aiName = "ShallowBrain 2"; break;
+                case 3: aiName = "DB1"; break;
+                default: aiName = "Unknown AI";
+            }
+
+            let difficultyName;
+            switch(difficulty) {
+                case 1: difficultyName = "Easy"; break;
+                case 2: difficultyName = "Medium"; break;
+                case 3: difficultyName = "Hard"; break;
+                case 4: difficultyName = "Expert"; break;
+                case 5: difficultyName = "Master"; break;
+                default: difficultyName = "Unknown";
+            }
+
+            let details = `${aiName} on ${difficultyName} difficulty`;
+            
+            if (difficultyChangedMidGame) {
+                details += " (changed mid-game)";
+            }
+
+            return details;
+        }
+
+        function showBanner(type) {
+            const winBanner = document.getElementById('win-banner');
+            const loseBanner = document.getElementById('lose-banner');
+            
+            if (type === 'win' && winBanner) {
+                winBanner.style.display = 'block';
+                document.getElementById('win-ai-details').textContent = getAIDetails();
+            } else if (type === 'lose' && loseBanner) {
+                loseBanner.style.display = 'block';
+                document.getElementById('lose-ai-details').textContent = getAIDetails();
+            }
+        }
+
+        function hideBanner(banner) {
+            if (banner) {
+                banner.style.display = 'none';
+            }
+        }
+
+        // Add event listeners for close buttons
+        document.querySelectorAll('.close-banner').forEach(button => {
+            button.addEventListener('click', function() {
+                hideBanner(this.closest('.banner'));
+            });
+        });
+
+        function resetGameModeButtons() {
+            document.querySelectorAll('#game-options button').forEach(btn => btn.classList.remove('selected-mode'));
         }
 
         initializeGame();

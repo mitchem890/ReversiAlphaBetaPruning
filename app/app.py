@@ -1,6 +1,10 @@
 import logging
 from flask import Flask, render_template, request, jsonify
-from app.shallowBrain import get_best_move as shallow_best_move
+from werkzeug.serving import run_simple
+#from shallowBrain import get_best_move as shallow_best_move
+from app.shallowbrain import main as sb1_best_move
+from app.shallowbrain2 import alpha_beta_reversi as sb2_best_move
+from app.DamonBrain1 import alpha_beta_reversi as damon_best_move
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -23,31 +27,6 @@ def what_is_shallowbrain():
     logger.info("Serving 'What is ShallowBrain' page")
     return render_template('ShallowBrain.html')
 
-@app.route('/ai_move', methods=['POST'])
-def ai_move():
-    logger.info("Received request for AI move")
-    board = request.json['board']
-    ai_color = request.json['aiColor']
-    ai_type = request.json['aiType']
-    
-    logger.debug(f"Board state: {board}")
-    logger.debug(f"AI color: {ai_color}")
-    logger.debug(f"AI type: {ai_type}")
-    
-    # Ensure the board is 8x8
-    if len(board) != 8 or any(len(row) != 8 for row in board):
-        logger.error("Invalid board size")
-        return jsonify({'error': 'Invalid board size'}), 400
-    
-    if ai_type == 'shallow':
-        logger.info("Calculating move using ShallowBrain")
-        row, col = shallow_best_move(board, ai_color)
-        logger.info(f"ShallowBrain chose move: ({row}, {col})")
-    else:
-        logger.error(f"Invalid AI type: {ai_type}")
-        return jsonify({'error': 'Invalid AI type'}), 400
-    
-    return jsonify({'row': row, 'col': col})
 
 @app.route('/get_ai_move', methods=['POST'])
 def get_ai_move():
@@ -56,22 +35,40 @@ def get_ai_move():
     board = data['board']
     current_player = data['current_player']
     difficulty = data['difficulty']
+    ai_version = data['ai_version']
     
     logger.debug(f"Board state: {board}")
     logger.debug(f"Current player: {current_player}")
     logger.debug(f"Difficulty: {difficulty}")
-    
+    logger.debug(f"AI Version: {ai_version}")
+    #Convert the board to a 2D array of 1 for AI and -1 for human, 0 for empty
+    if current_player == 'black':
+        user = 'white'
+    else:
+        user = 'black'
+    for i in range(8):
+        for j in range(8):
+            if board[i][j] == current_player:
+                board[i][j] = 1
+            elif board[i][j] == user:
+                board[i][j] = -1
+            else:
+                board[i][j] = 0
     # Add warning for higher difficulties
     if difficulty >= 4:
         logger.warning(f"High difficulty level ({difficulty}) selected. ShallowBrain may take longer to respond.")
     
     # Use ShallowBrain to calculate the best move
-    logger.info("Calculating move using ShallowBrain")
-    move = shallow_best_move(board, current_player, max_time=difficulty)
-    logger.info(f"ShallowBrain chose move: {move}")
-    
+    logger.info(f"Calculating move using ShallowBrain {ai_version}")
+    if ai_version == 1:
+        move = sb1_best_move(board, difficulty)
+    if ai_version == 2:
+        move = sb2_best_move(board, difficulty)
+    if ai_version == 3:
+        move = damon_best_move(board, difficulty)
+    logger.info(f"ShallowBrain {ai_version} chose move: {move}")
     return jsonify({'move': move})
 
 if __name__ == '__main__':
     logger.info("Starting Reversi application")
-    app.run(host='0.0.0.0', port=5000)
+    run_simple('0.0.0.0', 5000, app, use_reloader=True, use_debugger=True, threaded=True, request_timeout=60)
